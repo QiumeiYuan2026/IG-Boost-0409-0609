@@ -1,0 +1,704 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>ZERO Markets | 社媒资产增长战略复盘 Dashboard</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+tailwind.config = {
+  theme: {
+    extend: {
+      colors: {
+        brand: '#0BA347',
+        brandDark: '#087A35',
+        brandLight: '#0FD15E',
+        ink: '#1A1D1A',
+        panel: '#22271F',
+        panel2: '#262B22',
+        muted: '#9CA39A',
+        cold: '#F4F6F2',
+      },
+      fontFamily: {
+        display: ['"DM Sans"','ui-sans-serif','system-ui'],
+        mono: ['"JetBrains Mono"','monospace'],
+      }
+    }
+  }
+}
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;}
+html{scroll-behavior:smooth;}
+body{
+  background:#1A1D1A;
+  color:#F4F6F2;
+  font-family:'DM Sans',ui-sans-serif,system-ui;
+  line-height:1.6;
+  min-height:100vh;
+}
+body::before{
+  content:'';
+  position:fixed; inset:0;
+  background:
+    radial-gradient(ellipse 50% 40% at 12% 10%, rgba(11,163,71,.10) 0%, transparent 65%),
+    radial-gradient(ellipse 45% 40% at 90% 75%, rgba(11,163,71,.06) 0%, transparent 65%);
+  pointer-events:none;
+  z-index:0;
+}
+.glass{
+  background:rgba(34,39,31,.78);
+  backdrop-filter:blur(14px);
+  -webkit-backdrop-filter:blur(14px);
+  border:1px solid rgba(11,163,71,.14);
+}
+.glass-sm{
+  background:rgba(38,43,34,.6);
+  backdrop-filter:blur(8px);
+  -webkit-backdrop-filter:blur(8px);
+  border:1px solid rgba(156,163,154,.1);
+}
+.eyebrow{
+  font-family:'JetBrains Mono',monospace;
+  font-size:10px; font-weight:600;
+  letter-spacing:.16em; text-transform:uppercase;
+  color:#0FD15E;
+}
+.div-line{
+  height:1px;
+  background:linear-gradient(to right,transparent,rgba(11,163,71,.25),transparent);
+  margin:2.5rem 0;
+}
+
+/* KPI flip cards */
+.flip-card{ perspective:1200px; height:168px; cursor:pointer; }
+.flip-inner{
+  position:relative; width:100%; height:100%;
+  transition:transform .6s cubic-bezier(.4,.2,.2,1);
+  transform-style:preserve-3d;
+}
+.flip-card.flipped .flip-inner{ transform:rotateY(180deg); }
+.flip-front, .flip-back{
+  position:absolute; inset:0;
+  backface-visibility:hidden;
+  border-radius:16px;
+  padding:1.1rem 1.2rem;
+  display:flex; flex-direction:column;
+}
+.flip-front{
+  background:rgba(38,43,34,.7);
+  border:1px solid rgba(156,163,154,.12);
+  justify-content:space-between;
+}
+.flip-back{
+  background:linear-gradient(145deg,#0BA347,#087A35);
+  transform:rotateY(180deg);
+  justify-content:center;
+  color:#F4F6F2;
+}
+.flip-card:hover .flip-front{ border-color:rgba(11,163,71,.4); }
+.flip-hint{
+  font-size:10px; color:#9CA39A; display:flex; align-items:center; gap:4px;
+}
+
+/* Timeline */
+.tl-track{ position:relative; }
+.tl-track::before{
+  content:''; position:absolute; left:0; right:0; top:22px; height:2px;
+  background:linear-gradient(to right, rgba(156,163,154,.25), #0BA347, rgba(11,163,71,.7));
+}
+.tl-dot{
+  width:14px; height:14px; border-radius:50%;
+  background:#0BA347; border:3px solid #1A1D1A;
+  box-shadow:0 0 0 2px rgba(11,163,71,.4);
+  margin:16px auto 0;
+  position:relative; z-index:2;
+}
+.stage-card{ transition:transform .25s ease, box-shadow .25s ease; }
+.stage-card:hover{ transform:translateY(-3px); box-shadow:0 16px 40px rgba(0,0,0,.4); }
+
+/* Tabs */
+.tab-btn{
+  font-family:'JetBrains Mono',monospace;
+  font-size:11px; font-weight:600;
+  padding:8px 14px; border-radius:9999px;
+  border:1px solid rgba(156,163,154,.18);
+  color:#9CA39A;
+  transition:all .2s ease;
+  cursor:pointer;
+  background:transparent;
+}
+.tab-btn.active{
+  background:#0BA347; color:#0A0C09; border-color:#0BA347;
+}
+.tab-btn:hover:not(.active){ border-color:rgba(11,163,71,.4); color:#F4F6F2; }
+.tab-panel{ display:none; }
+.tab-panel.active{ display:block; }
+
+/* Badges */
+.badge{
+  display:inline-flex; align-items:center; gap:4px;
+  padding:2px 9px; border-radius:9999px;
+  font-family:'JetBrains Mono',monospace;
+  font-size:10px; font-weight:600; letter-spacing:.04em;
+}
+.b-green{background:rgba(11,163,71,.15); color:#5EE596; border:1px solid rgba(11,163,71,.35);}
+.b-amber{background:rgba(245,158,11,.12); color:#fbbf24; border:1px solid rgba(245,158,11,.3);}
+.b-gray{background:rgba(156,163,154,.12); color:#c4c9bf; border:1px solid rgba(156,163,154,.25);}
+
+/* Pipeline */
+.pipe-step{
+  flex:1; position:relative;
+  transition:transform .2s ease;
+}
+.pipe-step:hover{ transform:translateY(-3px); }
+.pipe-arrow{ color:#0BA347; font-size:22px; flex-shrink:0; }
+
+/* Milestone cards */
+.milestone-card{ transition:transform .22s ease, box-shadow .22s ease; }
+.milestone-card:hover{ transform:scale(1.02); box-shadow:0 12px 32px rgba(11,163,71,.15); }
+
+.reveal{ opacity:0; transform:translateY(20px); transition:opacity .55s ease, transform .55s ease; }
+.reveal.visible{ opacity:1; transform:translateY(0); }
+
+::-webkit-scrollbar{width:5px;}
+::-webkit-scrollbar-track{background:#1A1D1A;}
+::-webkit-scrollbar-thumb{background:#3a4034;border-radius:9999px;}
+</style>
+</head>
+<body>
+<div class="relative z-10">
+
+<!-- ═══════════════ HEADER ═══════════════ -->
+<header class="sticky top-0 z-50 glass" style="border-bottom:1px solid rgba(11,163,71,.15)">
+  <div class="max-w-5xl mx-auto px-6 py-3 flex items-center justify-between gap-4">
+    <div class="flex items-center gap-3">
+      <div class="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style="background:rgba(11,163,71,.15);border:1px solid rgba(11,163,71,.35)">
+        <svg class="w-4 h-4" style="color:#0FD15E" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/>
+        </svg>
+      </div>
+      <div>
+        <div class="eyebrow">ZERO Markets</div>
+        <div class="text-[11px]" style="color:#9CA39A">社媒资产增长战略复盘</div>
+      </div>
+    </div>
+    <div class="flex items-center gap-2">
+      <span class="badge b-green">04.09 – 06.09</span>
+      <span class="badge b-gray">三阶段全周期</span>
+    </div>
+  </div>
+</header>
+
+<!-- ═══════════════ HERO ═══════════════ -->
+<section class="max-w-5xl mx-auto px-6 pt-14 pb-8 reveal">
+  <p class="eyebrow mb-3">Social Growth Strategy Review · 2026</p>
+  <h1 class="text-[2.3rem] sm:text-5xl font-bold leading-tight tracking-tight mb-4" style="color:#F4F6F2">
+    0409-0609<br/>
+    <span style="color:#0FD15E">社媒投放增长数据复盘</span>
+  </h1>
+  <p class="text-[15px] max-w-2xl leading-relaxed" style="color:#9CA39A">
+    62 天、3个阶段、19 条加热帖，从粉丝基数 2,227 到 6,491 的高粘性资产积累。本报告完整还原从渠道测试到合规净化、再到爆款模型跑通的战略演进路径，并量化下一阶段的资产扩容预算与周期。
+  </p>
+</section>
+<br>
+<br>
+<!-- ═══════════════ KPI GRID ═══════════════ -->
+<section class="max-w-5xl mx-auto px-6 pb-6 reveal">
+  <div class="mb-5">
+    <p class="eyebrow mb-2 !text-[15px]">一 · 核心战果总览</p>
+    <h2 class="text-xl font-semibold" style="color:#F4F6F2">动态交互 KPI 看板</h2>
+    <p class="text-[12px] mt-1" style="color:#9CA39A">点击或悬停卡片，查看对应的业务成果与商业价值释义</p>
+  </div>
+
+  <div class="grid grid-cols-2 sm:grid-cols-3 gap-4" id="kpiGrid">
+
+    <div class="flip-card" onclick="this.classList.toggle('flipped')">
+      <div class="flip-inner">
+        <div class="flip-front">
+          <div>
+            <div class="text-[11px]" style="color:#9CA39A">总投放加热帖数</div>
+            <div class="text-[28px] font-bold mt-1" style="color:#F4F6F2">19 <span class="text-sm font-normal" style="color:#9CA39A">条</span></div>
+            <div class="text-[11px] mt-1" style="color:#5EE596">7 Reels / 12 Posts</div>
+          </div>
+          <div class="flip-hint"><i class="ti" style="font-style:normal">⤢</i> 点击查看释义</div>
+        </div>
+        <div class="flip-back">
+          <div class="text-[11px] font-semibold tracking-wide uppercase mb-1.5 opacity-80">高度集约的内容漏斗</div>
+          <p class="text-[12px] leading-relaxed opacity-95">非盲目铺量，所有加热帖均经过自然流表现、内容选题、视觉表现、文案无违禁词的严格 5 维筛选。</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="flip-card" onclick="this.classList.toggle('flipped')">
+      <div class="flip-inner">
+        <div class="flip-front">
+          <div>
+            <div class="text-[11px]" style="color:#9CA39A">全网总曝光 Impressions</div>
+            <div class="text-[26px] font-bold mt-1" style="color:#F4F6F2">8,979,943</div>
+            <div class="text-[11px] mt-1" style="color:#5EE596">次曝光</div>
+          </div>
+          <div class="flip-hint"><i class="ti" style="font-style:normal">⤢</i> 点击查看释义</div>
+        </div>
+        <div class="flip-back">
+          <div class="text-[11px] font-semibold tracking-wide uppercase mb-1.5 opacity-80">打造百万级现象红利</div>
+          <p class="text-[12px] leading-relaxed opacity-95">多条硬核内容斩获百万级曝光，如 Hot Topics-SpaceX IPO 单条斩获 1,783,752 次巨量展示。</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="flip-card" onclick="this.classList.toggle('flipped')">
+      <div class="flip-inner">
+        <div class="flip-front">
+          <div>
+            <div class="text-[11px]" style="color:#9CA39A">全网总覆盖 Reach</div>
+            <div class="text-[26px] font-bold mt-1" style="color:#F4F6F2">7,589,689</div>
+            <div class="text-[11px] mt-1" style="color:#5EE596">独立触达人数</div>
+          </div>
+          <div class="flip-hint"><i class="ti" style="font-style:normal">⤢</i> 点击查看释义</div>
+        </div>
+        <div class="flip-back">
+          <div class="text-[11px] font-semibold tracking-wide uppercase mb-1.5 opacity-80">全球外汇交易精准破圈</div>
+          <p class="text-[12px] leading-relaxed opacity-95">实现超 750 万真实独立交易受众的触达，大幅提升品牌在垂直心智中的覆盖密度。</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="flip-card" onclick="this.classList.toggle('flipped')">
+      <div class="flip-inner">
+        <div class="flip-front">
+          <div>
+            <div class="text-[11px]" style="color:#9CA39A">广告实际总消耗</div>
+            <div class="text-[26px] font-bold mt-1" style="color:#F4F6F2">$1,024.11</div>
+            <div class="text-[11px] mt-1" style="color:#5EE596">USD · 62 天</div>
+          </div>
+          <div class="flip-hint"><i class="ti" style="font-style:normal">⤢</i> 点击查看释义</div>
+        </div>
+        <div class="flip-back">
+          <div class="text-[11px] font-semibold tracking-wide uppercase mb-1.5 opacity-80">极度克制的预算把控</div>
+          <p class="text-[12px] leading-relaxed opacity-95">三阶段花费分别为 $296.89、$225.60、$501.92，用小预算撬动了现象级私域资产的沉淀。</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="flip-card" onclick="this.classList.toggle('flipped')">
+      <div class="flip-inner">
+        <div class="flip-front">
+          <div>
+            <div class="text-[11px]" style="color:#9CA39A">官方账号净涨粉量</div>
+            <div class="text-[26px] font-bold mt-1" style="color:#F4F6F2">+4,264</div>
+            <div class="text-[11px] mt-1" style="color:#5EE596">2,227 → 6,491</div>
+          </div>
+          <div class="flip-hint"><i class="ti" style="font-style:normal">⤢</i> 点击查看释义</div>
+        </div>
+        <div class="flip-back">
+          <div class="text-[11px] font-semibold tracking-wide uppercase mb-1.5 opacity-80">高粘性资产积累</div>
+          <p class="text-[12px] leading-relaxed opacity-95">粉丝基数从 2,227 暴涨至 6,491（截至 6 月 9 日），且此数据已对冲自然取关粉丝，纯度极高。</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="flip-card" onclick="this.classList.toggle('flipped')">
+      <div class="flip-inner">
+        <div class="flip-front">
+          <div>
+            <div class="text-[11px]" style="color:#9CA39A">平均粉丝获取成本 CPF</div>
+            <div class="text-[26px] font-bold mt-1" style="color:#F4F6F2">$0.240</div>
+            <div class="text-[11px] mt-1" style="color:#5EE596">/ 人</div>
+          </div>
+          <div class="flip-hint"><i class="ti" style="font-style:normal">⤢</i> 点击查看释义</div>
+        </div>
+        <div class="flip-back">
+          <div class="text-[11px] font-semibold tracking-wide uppercase mb-1.5 opacity-80">远超行业大盘的绝对优势</div>
+          <p class="text-[12px] leading-relaxed opacity-95">Meta 公布的亚太区外汇/金融衍生品赛道平均买量成本普遍在 $0.45–$0.75，我们的获客效率高出行业均线 50%–68%。</p>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<div class="max-w-5xl mx-auto px-6"><div class="div-line"></div></div>
+
+<!-- ═══════════════ STRATEGY TIMELINE ═══════════════ -->
+<section class="max-w-5xl mx-auto px-6 py-8 reveal">
+  <div class="mb-7">
+    <p class="eyebrow mb-2 !text-[15px]">二 · 战略演进</p>
+    <h2 class="text-xl font-semibold" style="color:#F4F6F2">从「广撒网」到「割红利」的三段论</h2>
+  </div>
+
+  <div class="tl-track grid grid-cols-3 gap-4 mb-2">
+    <div class="text-center"><span class="text-[10px] font-mono" style="color:#9CA39A">04.09 – 04.25</span><div class="tl-dot"></div></div>
+    <div class="text-center"><span class="text-[10px] font-mono" style="color:#9CA39A">04.27 – 05.05</span><div class="tl-dot"></div></div>
+    <div class="text-center"><span class="text-[10px] font-mono" style="color:#9CA39A">05.26 – 06.09</span><div class="tl-dot"></div></div>
+  </div>
+
+  <div class="grid sm:grid-cols-3 gap-4 mt-2">
+
+    <div class="glass stage-card rounded-2xl p-5">
+      <div class="flex items-center gap-2 mb-3">
+        <span class="text-lg">🕒</span>
+        <span class="badge b-gray">阶段一 · 测试期</span>
+      </div>
+      <h3 class="text-[15px] font-semibold mb-2" style="color:#F4F6F2">广撒网</h3>
+      <p class="text-[12px] mb-3" style="color:#9CA39A"><strong style="color:#F4F6F2">策略布控：</strong>加热 3 Reels + 3 Posts。旨在跑通 Boost 底层设置，测试不同外汇受众对基础内容的反应动机。</p>
+      <div class="p-2.5 rounded-lg text-[11px] leading-relaxed" style="background:rgba(156,163,154,.08);border:1px solid rgba(156,163,154,.18);color:#c4c9bf">
+        <strong style="color:#F4F6F2">阶段洞察：</strong>初战告捷，验证了渠道可行性。但因尚未进行严格合规过滤，进来的流量包含部分泛理财粉。
+      </div>
+    </div>
+
+    <div class="glass stage-card rounded-2xl p-5" style="border-color:rgba(245,158,11,.25)">
+      <div class="flex items-center gap-2 mb-3">
+        <span class="text-lg">🕒</span>
+        <span class="badge b-amber">阶段二 · 摸索期</span>
+      </div>
+      <h3 class="text-[15px] font-semibold mb-2" style="color:#F4F6F2">立规矩</h3>
+      <p class="text-[12px] mb-3" style="color:#9CA39A"><strong style="color:#F4F6F2">策略布控：</strong>加热 2 Reels + 3 Posts。全面推行风控：筛查敏感词，严格呈现"starting from 0.0 pips"等严谨术语，剔除泛流量。</p>
+      <div class="p-2.5 rounded-lg text-[11px] leading-relaxed" style="background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.22);color:#fbbf24">
+        <strong style="color:#F4F6F2">数据与洞察：</strong>转化率降至 0.4449%（下降 39%）是主动净化受众池的必然阵痛；但依靠明星爆款模型（Boost Post 3）成功在 9 天内斩获 1,248 净涨粉。
+      </div>
+    </div>
+
+    <div class="glass stage-card rounded-2xl p-5" style="border-color:rgba(11,163,71,.35)">
+      <div class="flex items-center gap-2 mb-3">
+        <span class="text-lg">🕒</span>
+        <span class="badge b-green">阶段三 · 爆款期</span>
+      </div>
+      <h3 class="text-[15px] font-semibold mb-2" style="color:#F4F6F2">割红利</h3>
+      <p class="text-[12px] mb-3" style="color:#9CA39A"><strong style="color:#F4F6F2">策略布控：</strong>加热 2 Reels + 6 Posts。将精力聚焦于"硬核优质内容与高收益活动"（如 WTC Bonus Round 赛事红利 / SpaceX IPO 话题事件）的完美结合。</p>
+      <div class="p-2.5 rounded-lg text-[11px] leading-relaxed" style="background:rgba(11,163,71,.1);border:1px solid rgba(11,163,71,.28);color:#5EE596">
+        <strong style="color:#F4F6F2">数据与洞察：</strong>半月稳增 1,850 粉丝！主页访问转化率飙升至 0.8758%（涨幅达 96.9%），完美追平测试期最高巅峰，标志着合规环境下吸睛密码的彻底跑通！
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<div class="max-w-5xl mx-auto px-6"><div class="div-line"></div></div>
+
+
+<!-- ═══════════════ CHARTS STACKED ═══════════════ -->
+<section class="max-w-5xl mx-auto px-6 py-8 reveal">
+  <div class="mb-5">
+    <p class="eyebrow mb-2 !text-[15px]">三 · 核心成果数据</p>
+    <h2 class="text-xl font-semibold" style="color:#F4F6F2">四维增长曲线深度解读</h2>
+  </div>
+
+  <div class="space-y-5">
+
+    <div class="glass rounded-2xl p-5 sm:p-6">
+      <div class="flex items-center gap-2 mb-4">
+        <span class="badge b-green">① 粉丝增长曲线</span>
+      </div>
+      <div style="height:280px;position:relative"><canvas id="chartFollowers"></canvas></div>
+      <div class="mt-4 p-3 rounded-xl text-[12px] leading-relaxed" style="background:rgba(11,163,71,.08);border:1px solid rgba(11,163,71,.22);color:#5EE596">
+        💬 <strong style="color:#F4F6F2">现象洞察：</strong>从 2,227 到 6,491，曲线在 4.27 后开始陡峭爬升——这不是运气，是"爆款模型"被验证后的复利效应；06.09 战略变盘点标志着我们正式进入规模化收割阶段。
+      </div>
+    </div>
+
+    <div class="glass rounded-2xl p-5 sm:p-6">
+      <div class="flex items-center gap-2 mb-4">
+        <span class="badge b-green">② 日均访问阶梯</span>
+      </div>
+      <div style="height:280px;position:relative"><canvas id="chartVisits"></canvas></div>
+      <div class="mt-4 p-3 rounded-xl text-[12px] leading-relaxed" style="background:rgba(11,163,71,.08);border:1px solid rgba(11,163,71,.22);color:#5EE596">
+        💬 <strong style="color:#F4F6F2">现象洞察：</strong>日均主页访问量从 1,323 一路爬升至 2,139，三阶段引流效率累计暴增 61.9%——证明合规净化非但没有拖累流量，反而通过内容精度提升换来了更高的访问密度。
+      </div>
+    </div>
+
+    <div class="glass rounded-2xl p-5 sm:p-6">
+      <div class="flex items-center gap-2 mb-4">
+        <span class="badge b-green">③ 单次访问成本</span>
+      </div>
+      <div style="height:280px;position:relative"><canvas id="chartCPV"></canvas></div>
+      <div class="mt-4 p-3 rounded-xl text-[12px] leading-relaxed" style="background:rgba(11,163,71,.08);border:1px solid rgba(11,163,71,.22);color:#5EE596">
+        💬 <strong style="color:#F4F6F2">现象洞察：</strong>单次访问成本在阶段二攀升至 $0.01837，这是"确立合规标准、主动去泛"的必要代价；阶段三回落至 $0.0156，证明爆款模型跑通后成本回落 15.1%，效率拐点已经出现。
+      </div>
+    </div>
+
+    <div class="glass rounded-2xl p-5 sm:p-6">
+      <div class="flex items-center gap-2 mb-4">
+        <span class="badge b-green">④ 主页访问转化率</span>
+      </div>
+      <div style="height:280px;position:relative"><canvas id="chartConv"></canvas></div>
+      <div class="mt-4 p-3 rounded-xl text-[12px] leading-relaxed" style="background:rgba(11,163,71,.08);border:1px solid rgba(11,163,71,.22);color:#5EE596">
+        💬 <strong style="color:#F4F6F2">现象洞察：</strong>转化率从 0.88% 跌至 0.44%，再反弹至 0.88%——这条 V 型曲线就是"先净化、再收割"战略最直观的证据，第二到第三阶段逆势翻倍 +96.9%。
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<div class="max-w-5xl mx-auto px-6"><div class="div-line"></div></div>
+
+
+<!-- ═══════════════ ROI MILESTONES ═══════════════ -->
+<section class="max-w-5xl mx-auto px-6 py-8 reveal">
+  <div class="mb-5">
+    <p class="eyebrow mb-2 !text-[15px]">四 · 社媒投放未来战略</p>
+    <h2 class="text-xl font-semibold" style="color:#F4F6F2">扩容量化看板</h2>
+    <p class="text-[12px] mt-1" style="color:#9CA39A">ZERO Markets 官方社媒资产扩容规划 · 基于当前 CPF $0.24017</p>
+  </div>
+
+  <div class="grid sm:grid-cols-3 gap-4">
+
+    <div class="milestone-card glass rounded-2xl p-5" style="border-color:rgba(11,163,71,.2)">
+      <div class="flex items-center justify-between mb-3">
+        <span class="badge b-green">里程碑 1</span>
+        <span class="text-[11px] font-mono" style="color:#9CA39A">~1.2 个月</span>
+      </div>
+      <div class="text-2xl font-bold mb-1" style="color:#F4F6F2">10,000 <span class="text-sm font-normal" style="color:#9CA39A">粉</span></div>
+      <div class="text-[12px] mb-3" style="color:#5EE596">需净增 3,509 人</div>
+      <div class="glass-sm rounded-lg p-2.5 mb-3">
+        <div class="text-[11px]" style="color:#9CA39A">预估追加费用</div>
+        <div class="text-[17px] font-semibold" style="color:#F4F6F2">$1000</div>
+      </div>
+      <p class="text-[11px] leading-relaxed" style="color:#9CA39A"><strong style="color:#c4c9bf">商业意义：</strong>解锁官方公信力基石（Social Proof），提升整体多渠道转化率。</p>
+    </div>
+
+    <div class="milestone-card glass rounded-2xl p-5" style="border-color:rgba(245,158,11,.2)">
+      <div class="flex items-center justify-between mb-3">
+        <span class="badge b-amber">里程碑 2</span>
+        <span class="text-[11px] font-mono" style="color:#9CA39A">~2.8 个月</span>
+      </div>
+      <div class="text-2xl font-bold mb-1" style="color:#F4F6F2">15,000 <span class="text-sm font-normal" style="color:#9CA39A">粉</span></div>
+      <div class="text-[12px] mb-3" style="color:#fbbf24">需净增 8,509 人</div>
+      <div class="glass-sm rounded-lg p-2.5 mb-3">
+        <div class="text-[11px]" style="color:#9CA39A">预估追加费用</div>
+        <div class="text-[17px] font-semibold" style="color:#F4F6F2">$2550</div>
+      </div>
+      <p class="text-[11px] leading-relaxed" style="color:#9CA39A"><strong style="color:#c4c9bf">商业意义：</strong>垂直赛道头部卡位，产生 GEO/SEO 协同裂变效应。</p>
+    </div>
+
+    <div class="milestone-card glass rounded-2xl p-5" style="border-color:rgba(212,90,60,.25)">
+      <div class="flex items-center justify-between mb-3">
+        <span class="badge" style="background:rgba(212,90,60,.12);color:#F0997B;border:1px solid rgba(212,90,60,.3)">里程碑 3</span>
+        <span class="text-[11px] font-mono" style="color:#9CA39A">~4.5 个月</span>
+      </div>
+      <div class="text-2xl font-bold mb-1" style="color:#F4F6F2">20,000 <span class="text-sm font-normal" style="color:#9CA39A">粉</span></div>
+      <div class="text-[12px] mb-3" style="color:#F0997B">需净增 13,509 人</div>
+      <div class="glass-sm rounded-lg p-2.5 mb-3">
+        <div class="text-[11px]" style="color:#9CA39A">预估追加费用</div>
+        <div class="text-[17px] font-semibold" style="color:#F4F6F2">$4000</div>
+      </div>
+      <p class="text-[11px] leading-relaxed" style="color:#9CA39A"><strong style="color:#c4c9bf">商业意义：</strong>全面转化为高净值交易员社群，开启流量全面收割。</p>
+    </div>
+
+  </div>
+</section>
+
+<!-- ═══════════════ FUNNEL PIPELINE ═══════════════ -->
+<section class="max-w-5xl mx-auto px-6 py-8 reveal">
+  <div class="mb-6">
+    <p class="eyebrow mb-2 !text-[15px]">终极大闭环</p>
+    <h2 class="text-xl font-semibold" style="color:#F4F6F2">从「社媒引流」到「客户入金」的商业路径图</h2>
+  </div>
+
+  <div class="glass rounded-2xl p-5 sm:p-6">
+    <div class="flex flex-col sm:flex-row items-stretch gap-3">
+
+      <div class="pipe-step glass-sm rounded-xl p-4 text-center">
+        <div class="text-2xl mb-2">📡</div>
+        <div class="text-[11px] font-semibold mb-1" style="color:#5EE596">STEP 1</div>
+        <div class="text-[13px] font-semibold mb-1" style="color:#F4F6F2">社媒引流</div>
+        <div class="text-[11px]" style="color:#9CA39A">巨量曝光</div>
+      </div>
+
+      <div class="flex items-center justify-center pipe-arrow">→</div>
+
+      <div class="pipe-step glass-sm rounded-xl p-4 text-center">
+        <div class="text-2xl mb-2">🌱</div>
+        <div class="text-[11px] font-semibold mb-1" style="color:#5EE596">STEP 2</div>
+        <div class="text-[13px] font-semibold mb-1" style="color:#F4F6F2">粉丝沉淀</div>
+        <div class="text-[11px]" style="color:#9CA39A">10k+ 高公信力官微资产</div>
+      </div>
+
+      <div class="flex items-center justify-center pipe-arrow">→</div>
+
+      <div class="pipe-step glass-sm rounded-xl p-4 text-center">
+        <div class="text-2xl mb-2">🎯</div>
+        <div class="text-[11px] font-semibold mb-1" style="color:#5EE596">STEP 3</div>
+        <div class="text-[13px] font-semibold mb-1" style="color:#F4F6F2">转化跟进</div>
+        <div class="text-[11px]" style="color:#9CA39A">主页 Link 导流</div>
+      </div>
+
+      <div class="flex items-center justify-center pipe-arrow">→</div>
+
+      <div class="pipe-step rounded-xl p-4 text-center" style="background:linear-gradient(145deg,#0BA347,#087A35)">
+        <div class="text-2xl mb-2">💰</div>
+        <div class="text-[11px] font-semibold mb-1 opacity-85" style="color:#F4F6F2">STEP 4</div>
+        <div class="text-[13px] font-semibold mb-1" style="color:#F4F6F2">客户入金交易</div>
+        <div class="text-[11px] opacity-90" style="color:#F4F6F2">流量 100% 财务变现</div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ FOOTER ═══════════════ -->
+<footer style="border-top:1px solid rgba(11,163,71,.12)">
+  <div class="max-w-5xl mx-auto px-6 py-6 flex flex-col sm:flex-row items-center justify-between gap-3">
+    <div class="text-[11px]" style="color:#5c6357">© 2026 ZERO Markets · 社媒增长战略复盘 · 内部管理层汇报材料</div>
+    <div class="flex items-center gap-2">
+      <span class="badge b-green">CPF $0.240</span>
+      <span class="badge b-gray">62 天周期</span>
+    </div>
+  </div>
+</footer>
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+const ink = '#F4F6F2';
+const muted = '#9CA39A';
+const grid = 'rgba(156,163,154,.12)';
+const brand = '#0BA347';
+const brandLight = '#0FD15E';
+const amber = '#f59e0b';
+
+new Chart(document.getElementById('chartFollowers'), {
+  type: 'line',
+  data: {
+    labels: ['04.09\n阶段一起','04.25\n阶段一止','04.27\n模型验证','05.05\n阶段二止','05.26\n阶段三起','06.09\n阶段三止'],
+    datasets: [{
+      label: '粉丝总量',
+      data: [2227, 2890, 3050, 4138, 4641, 6491],
+      borderColor: brandLight,
+      backgroundColor: 'rgba(11,163,71,.18)',
+      fill: true,
+      tension: 0.35,
+      pointRadius: [4,4,7,4,4,7],
+      pointBackgroundColor: [brandLight,brandLight,'#fbbf24',brandLight,brandLight,'#fbbf24'],
+      pointBorderColor: '#1A1D1A',
+      pointBorderWidth: 2,
+      borderWidth: 2.5,
+    }]
+  },
+  options: {
+    responsive:true, maintainAspectRatio:false,
+    plugins:{
+      legend:{display:false},
+      tooltip:{ callbacks:{ label: ctx => '粉丝数: '+ctx.raw.toLocaleString() } }
+    },
+    scales:{
+      x:{ ticks:{color:muted,font:{size:10}}, grid:{color:grid} },
+      y:{ ticks:{color:muted,font:{size:11},callback:v=>v.toLocaleString()}, grid:{color:grid} }
+    }
+  }
+});
+
+new Chart(document.getElementById('chartVisits'), {
+  type: 'bar',
+  data: {
+    labels: ['阶段一 · 04.09-04.25','阶段二 · 04.27-05.05','阶段三 · 05.26-06.09'],
+    datasets: [{
+      label: '日均主页访问量',
+      data: [1323, 1364, 2139],
+      backgroundColor: ['rgba(156,163,154,.5)','rgba(245,158,11,.55)','rgba(11,163,71,.7)'],
+      borderColor: [muted, amber, brandLight],
+      borderWidth: 1.5,
+      borderRadius: 6,
+    }]
+  },
+  options: {
+    responsive:true, maintainAspectRatio:false,
+    plugins:{
+      legend:{display:false},
+      tooltip:{ callbacks:{ label: ctx => '日均访问: '+ctx.raw.toLocaleString() } }
+    },
+    scales:{
+      x:{ ticks:{color:muted,font:{size:11}}, grid:{display:false} },
+      y:{ ticks:{color:muted,font:{size:11}}, grid:{color:grid}, title:{display:true,text:'日均访问量',color:muted,font:{size:10}} }
+    }
+  }
+});
+
+new Chart(document.getElementById('chartCPV'), {
+  type: 'line',
+  data: {
+    labels: ['阶段一 · 04.09-04.25','阶段二 · 04.27-05.05','阶段三 · 05.26-06.09'],
+    datasets: [{
+      label: '单次主页访问成本',
+      data: [0.01319, 0.01837, 0.0156],
+      borderColor: amber,
+      backgroundColor: 'rgba(245,158,11,.12)',
+      fill: true,
+      tension: 0.3,
+      pointRadius: 7,
+      pointBackgroundColor: ['#9CA39A', '#f59e0b', '#0FD15E'],
+      pointBorderColor:'#1A1D1A',
+      pointBorderWidth:2,
+      borderWidth: 2.5,
+    }]
+  },
+  options: {
+    responsive:true, maintainAspectRatio:false,
+    plugins:{
+      legend:{display:false},
+      tooltip:{ callbacks:{ label: ctx => '$'+ctx.raw.toFixed(5) } }
+    },
+    scales:{
+      x:{ ticks:{color:muted,font:{size:11}}, grid:{display:false} },
+      y:{ ticks:{color:muted,font:{size:11},callback:v=>'$'+v.toFixed(3)}, grid:{color:grid} }
+    }
+  }
+});
+
+new Chart(document.getElementById('chartConv'), {
+  type: 'line',
+  data: {
+    labels: ['阶段一 · 0.88%','阶段二 · 0.44%','阶段三 · 0.88%'],
+    datasets: [{
+      label: '主页访问转化率',
+      data: [0.88, 0.4449, 0.8758],
+      borderColor: brandLight,
+      backgroundColor: 'rgba(11,163,71,.15)',
+      fill: true,
+      tension: 0.35,
+      pointRadius: 8,
+      pointBackgroundColor: ['#9CA39A', '#f59e0b', '#0FD15E'],
+      pointBorderColor:'#1A1D1A',
+      pointBorderWidth:2,
+      borderWidth: 3,
+    }]
+  },
+  options: {
+    responsive:true, maintainAspectRatio:false,
+    plugins:{
+      legend:{display:false},
+      tooltip:{ callbacks:{ label: ctx => '转化率: '+ctx.raw.toFixed(2)+'%' } }
+    },
+    scales:{
+      x:{ ticks:{color:muted,font:{size:11}}, grid:{display:false} },
+      y:{ ticks:{color:muted,font:{size:11},callback:v=>v+'%'}, grid:{color:grid}, min:0 }
+    }
+  }
+});
+
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById(btn.dataset.tab).classList.add('active');
+  });
+});
+
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      entry.target.classList.add('visible');
+      observer.unobserve(entry.target);
+    }
+  });
+}, { threshold: 0.08 });
+document.querySelectorAll('.reveal').forEach((el,i) => {
+  el.style.transitionDelay = (i % 5) * 0.06 + 's';
+  observer.observe(el);
+});
+</script>
+</body>
+</html>
